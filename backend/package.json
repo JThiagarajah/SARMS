@@ -1,0 +1,45 @@
+{
+  "name": "sarms-backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "start": "node dist/server.js",
+    "db:migrate": "ts-node src/db/migrate.ts",
+    "db:reset": "ts-node src/db/resetDb.ts",
+    "seed": "ts-node src/db/seed.ts",
+    "test": "jest --runInBand"
+  },
+  "dependencies": {
+    "@types/nodemailer": "^8.0.1",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "express-async-errors": "^3.1.1",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.2.0",
+    "nodemailer": "^9.0.5",
+    "pdf-lib": "^1.17.1",
+    "pg": "^8.23.0",
+    "xlsx": "^0.18.5",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/jest": "^29.5.13",
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/multer": "^2.2.0",
+    "@types/node": "^22.7.4",
+    "@types/pg": "^8.23.1",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.6.2"
+  }
+}

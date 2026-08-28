@@ -1,0 +1,434 @@
+:root {
+  /* University of Vavuniya seal palette: deep maroon + gold */
+  --navy: #3b0f33;        /* primary — kept the variable name "navy" so the rest of the sheet
+                              (written before the rebrand) still points at the brand colour */
+  --navy-light: #5a1a4d;
+  --maroon-dark: #260a21;
+  --gold: #c99a2e;
+  --gold-light: #f6d170;
+  --teal: #8a6d1a;        /* focus-ring / accent — a muted gold, replaces the old teal accent */
+  --bg: #f7f3ec;
+  --card: #ffffff;
+  --border: #e7ddc9;
+  --text: #241a1e;
+  --text-muted: #6b5f56;
+  --amber: #b8860b;
+  --amber-bg: #fdf3d9;
+  --blue: #2563eb;
+  --blue-bg: #e3ecfd;
+  --green: #16803c;
+  --green-bg: #e2f6e9;
+  --grey-bg: #efe9df;
+  --red: #b3261e;
+  --red-bg: #fbe6e4;
+  --radius: 10px;
+  --shadow: 0 1px 2px rgba(59, 15, 51, 0.07), 0 1px 8px rgba(59, 15, 51, 0.05);
+  --font-display: "Playfair Display", Georgia, "Times New Roman", serif;
+  --font-body: "Inter", "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+}
+
+a { color: var(--navy-light); }
+
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 250px;
+  flex-shrink: 0;
+  background: linear-gradient(180deg, var(--navy) 0%, var(--maroon-dark) 100%);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 0;
+  border-right: 3px solid var(--gold);
+}
+
+.sidebar-brand {
+  padding: 0 20px 18px;
+  border-bottom: 1px solid rgba(255,255,255,0.14);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.sidebar-brand img.seal { width: 42px; height: 42px; flex-shrink: 0; }
+.sidebar-brand .name { font-family: var(--font-display); font-weight: 700; font-size: 1.2rem; letter-spacing: 0.02em; color: var(--gold-light); }
+.sidebar-brand .sub { font-size: 0.7rem; color: #d9c9dd; margin-top: 2px; line-height: 1.4; }
+
+.sidebar nav { display: flex; flex-direction: column; gap: 2px; padding: 0 10px; flex: 1; }
+.sidebar nav a {
+  color: #e4d6e7;
+  text-decoration: none;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 0.92rem;
+}
+.sidebar nav a:hover { background: rgba(255,255,255,0.08); }
+.sidebar nav a.active { background: var(--gold); color: var(--maroon-dark); font-weight: 700; }
+
+.sidebar-user {
+  padding: 14px 20px 4px;
+  border-top: 1px solid rgba(255,255,255,0.14);
+  margin-top: 10px;
+}
+.sidebar-user .who { font-size: 0.85rem; font-weight: 600; }
+.sidebar-user .role { font-size: 0.75rem; color: #d9c9dd; margin-bottom: 10px; }
+.sidebar-user button {
+  width: 100%;
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+  border: none;
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.82rem;
+}
+.sidebar-user button:hover { background: rgba(255,255,255,0.18); }
+
+.main-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.main {
+  flex: 1;
+  padding: 28px 36px 40px;
+  max-width: 1180px;
+  width: 100%;
+}
+
+.site-footer {
+  border-top: 1px solid var(--border);
+  background: #fff;
+  padding: 16px 36px;
+  margin-top: auto;
+}
+.site-footer-inner {
+  max-width: 1180px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.site-footer-inner strong { color: var(--navy); }
+.site-footer-contact { text-align: right; }
+.site-footer-contact a { color: var(--navy-light); }
+
+/* Mobile top bar (hamburger + brand) — hidden on desktop, shown only under the breakpoint below. */
+.mobile-topbar {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(180deg, var(--navy) 0%, var(--maroon-dark) 100%);
+  border-bottom: 3px solid var(--gold);
+  padding: 10px 16px;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+.mobile-topbar-brand { display: flex; align-items: center; gap: 10px; color: var(--gold-light); font-family: var(--font-display); font-weight: 700; }
+.mobile-topbar-brand img.seal { width: 30px; height: 30px; }
+.hamburger {
+  background: rgba(255,255,255,0.12);
+  border: none;
+  border-radius: 8px;
+  width: 40px;
+  height: 36px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  padding: 0;
+}
+.hamburger span { display: block; width: 20px; height: 2px; background: #fff; border-radius: 2px; }
+.hamburger:hover { background: rgba(255,255,255,0.22); }
+
+.sidebar-scrim {
+  display: none;
+}
+
+/* Tabs (Lecturer ICA / Final marks / Results) */
+.tab-bar {
+  display: flex;
+  gap: 4px;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: 20px;
+  overflow-x: auto;
+}
+.tab {
+  background: transparent;
+  color: var(--text-muted);
+  border: none;
+  border-radius: 8px 8px 0 0;
+  padding: 10px 16px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: -2px;
+  border-bottom: 2px solid transparent;
+}
+.tab:hover { background: var(--grey-bg); color: var(--text); }
+.tab.active { color: var(--navy); border-bottom: 2px solid var(--gold); background: transparent; }
+.tab-count {
+  background: var(--grey-bg);
+  color: var(--text-muted);
+  border-radius: 999px;
+  font-size: 0.68rem;
+  padding: 1px 7px;
+  font-weight: 700;
+}
+.tab.active .tab-count { background: var(--gold); color: var(--maroon-dark); }
+.tab-count-amber { background: var(--amber-bg); color: var(--amber); }
+.tab.active .tab-count-amber { background: var(--amber); color: #fff; }
+
+/* Honours/eligibility badge */
+.honours-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(120deg, #fdf3d9, #fff);
+  border: 1px solid var(--gold);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  margin-bottom: 20px;
+}
+.honours-banner .icon { font-size: 1.6rem; }
+.honours-banner strong { color: var(--navy); }
+
+.welcome-banner {
+  background: linear-gradient(120deg, var(--navy) 0%, var(--navy-light) 100%);
+  color: #fff;
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  border-top: 3px solid var(--gold);
+}
+.welcome-banner h1 { font-family: var(--font-display); margin: 0 0 4px; font-size: 1.4rem; color: #fff; }
+.welcome-banner p { margin: 0; color: #e4d6e7; font-size: 0.9rem; }
+.welcome-banner .dean-quote {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,0.2);
+  font-style: italic;
+  color: var(--gold-light);
+  font-size: 0.88rem;
+}
+.welcome-banner .dean-quote .attribution { display: block; margin-top: 4px; font-style: normal; font-size: 0.76rem; color: #d9c9dd; }
+
+.page-header { margin-bottom: 22px; }
+.page-header h1 { font-family: var(--font-display); font-size: 1.65rem; margin: 0 0 4px; color: var(--navy); }
+.page-header p { margin: 0; color: var(--text-muted); font-size: 0.92rem; }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--gold);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+.card h2 { font-family: var(--font-display); margin: 0 0 14px; font-size: 1.15rem; color: var(--navy); }
+.card h3 { margin: 0 0 10px; font-size: 0.95rem; color: var(--navy); }
+
+.grid { display: grid; gap: 18px; }
+.grid-2 { grid-template-columns: repeat(2, 1fr); }
+.grid-3 { grid-template-columns: repeat(3, 1fr); }
+.grid-4 { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 900px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } }
+
+.stat-card { text-align: left; }
+.stat-card .value { font-size: 1.9rem; font-weight: 700; color: var(--navy); }
+.stat-card .label { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; }
+
+table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+th { text-align: left; color: var(--text-muted); font-weight: 600; font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.03em; padding: 8px 10px; border-bottom: 2px solid var(--border); }
+td { padding: 9px 10px; border-bottom: 1px solid var(--border); }
+tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: #fafbfd; }
+
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.badge-grey { background: var(--grey-bg); color: #475569; }
+.badge-amber { background: var(--amber-bg); color: var(--amber); }
+.badge-blue { background: var(--blue-bg); color: var(--blue); }
+.badge-green { background: var(--green-bg); color: var(--green); }
+.badge-red { background: var(--red-bg); color: var(--red); }
+
+button, .btn {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  background: var(--navy);
+  color: #fff;
+  transition: background 0.12s;
+}
+button:hover, .btn:hover { background: var(--navy-light); }
+button:disabled { background: #c9bfc6; cursor: not-allowed; }
+button.secondary { background: var(--grey-bg); color: var(--text); }
+button.secondary:hover { background: #e3dac9; }
+button.danger { background: var(--red); }
+button.danger:hover { background: #932018; }
+button.ghost { background: transparent; color: var(--navy); border: 1px solid var(--border); }
+button.small { padding: 5px 10px; font-size: 0.78rem; }
+button.gold { background: var(--gold); color: var(--maroon-dark); }
+button.gold:hover { background: var(--gold-light); }
+
+input, select, textarea {
+  font-family: inherit;
+  font-size: 0.88rem;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  width: 100%;
+  background: #fff;
+  color: var(--text);
+}
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--teal); outline-offset: 1px; }
+label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; }
+.field { margin-bottom: 14px; }
+
+.form-row { display: flex; gap: 10px; align-items: flex-end; }
+.form-row > * { flex: 1; }
+
+.banner {
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  font-size: 0.86rem;
+  margin-bottom: 18px;
+}
+.banner-error { background: var(--red-bg); color: var(--red); border: 1px solid #f2c6c1; }
+.banner-info { background: var(--blue-bg); color: var(--blue); border: 1px solid #c6d7f9; }
+.banner-success { background: var(--green-bg); color: var(--green); border: 1px solid #bfe6cc; }
+
+.center-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(201,154,46,0.18), transparent 60%),
+    linear-gradient(160deg, var(--navy) 0%, var(--maroon-dark) 100%);
+  padding: 24px;
+}
+.login-card {
+  width: 400px;
+  max-width: 100%;
+  background: #fff;
+  border-radius: 14px;
+  border-top: 4px solid var(--gold);
+  padding: 30px 32px 34px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+}
+.login-card .seal { display: block; width: 68px; height: 68px; margin: 0 auto 14px; }
+.login-card h1 {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  color: var(--navy);
+  margin: 0 0 2px;
+  text-align: center;
+  letter-spacing: 0.02em;
+}
+.login-card .system-name { text-align: center; font-size: 0.78rem; font-weight: 600; color: var(--gold); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+.login-card p.sub { color: var(--text-muted); font-size: 0.82rem; margin: 0 0 22px; text-align: center; line-height: 1.5; }
+.login-card .forgot-link { display: block; text-align: center; margin-top: 14px; font-size: 0.82rem; }
+.login-card .footer-note { text-align: center; font-size: 0.72rem; color: var(--text-muted); margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--border); }
+
+.muted { color: var(--text-muted); }
+.text-right { text-align: right; }
+.mono { font-variant-numeric: tabular-nums; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; }
+.gap-8 { display: flex; gap: 8px; }
+.empty-state { padding: 30px; text-align: center; color: var(--text-muted); font-size: 0.9rem; }
+
+/* ---------------------------------------------------------------------------------------------
+   Mobile responsive pass. Below the breakpoint the fixed sidebar becomes a hidden dropdown panel
+   toggled by the hamburger button in the mobile top bar (see Layout.tsx); above it, nothing here
+   changes the desktop layout at all.
+   --------------------------------------------------------------------------------------------- */
+@media (max-width: 860px) {
+  .mobile-topbar { display: flex; }
+  .app-shell { flex-direction: column; }
+
+  .sidebar {
+    display: none;
+    position: fixed;
+    top: 57px;
+    left: 0;
+    right: 0;
+    width: auto;
+    max-height: calc(100vh - 57px);
+    overflow-y: auto;
+    z-index: 40;
+    border-right: none;
+    border-bottom: 3px solid var(--gold);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.25);
+  }
+  .sidebar.sidebar-open { display: flex; }
+  .sidebar .sidebar-brand { display: none; }
+
+  .sidebar-scrim {
+    display: block;
+    position: fixed;
+    inset: 57px 0 0 0;
+    background: rgba(20, 6, 17, 0.45);
+    z-index: 35;
+  }
+
+  .main { padding: 18px 16px 32px; }
+  .page-header h1 { font-size: 1.35rem; }
+
+  .site-footer { padding: 14px 16px; }
+  .site-footer-inner { flex-direction: column; align-items: flex-start; text-align: left; }
+  .site-footer-contact { text-align: left; }
+
+  .form-row { flex-direction: column; }
+  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+
+  /* Tables don't reflow well on narrow screens — let them scroll horizontally inside their card
+     rather than squeezing columns unreadably or overflowing the page itself. */
+  .card { padding: 16px; }
+  table { min-width: 460px; }
+
+  .welcome-banner { padding: 16px; }
+  .login-card { padding: 24px 20px 26px; }
+}
+
+@media (max-width: 480px) {
+  .stat-card .value { font-size: 1.5rem; }
+  .card h2 { font-size: 1.02rem; }
+}
