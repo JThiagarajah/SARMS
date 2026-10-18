@@ -102,6 +102,20 @@ export function AdminOfferings() {
       {error && <div className="banner banner-error">{error}</div>}
 
       <div className="card">
+        <h2>Bulk-import lecturer teaching profile (Excel)</h2>
+        <p className="muted" style={{ marginTop: -6 }}>
+          Upload a sheet where each row is a lecturer, with columns "1.1" through "4.2" (Level.Semester)
+          holding comma-separated course codes they teach in that slot. This does not create accounts —
+          each row is matched to an existing lecturer account by email (syncing their department/designation/
+          qualification from the sheet) and creates real course offerings for the academic year you enter;
+          nothing is queued for review. A lecturer with no matching account is reported as a row you need to
+          fix — create their account first under Accounts, then re-upload. Re-uploading is otherwise safe:
+          offerings that already exist are just skipped, not duplicated.
+        </p>
+        <TeachingProfileUploader onDone={() => offerings.reload()} />
+      </div>
+
+      <div className="card">
         <h2>Bulk-assign lecturers (Excel)</h2>
         <p className="muted" style={{ marginTop: -6 }}>
           Upload a spreadsheet of what each lecturer is capable of teaching — one row per lecturer/course/year/semester.
@@ -217,6 +231,96 @@ export function AdminOfferings() {
           </table>
         )}
       </div>
+    </div>
+  );
+}
+
+interface TeachingProfileRowResult {
+  row: number; staffCode: string; name: string; status: "matched" | "error"; reason?: string;
+  offeringsCreated: number; offeringsSkipped: number; offeringsFailed: number; issues: string[];
+}
+interface TeachingProfileBulkResponse {
+  lecturers: number; matched: number; failed: number;
+  offeringsCreated: number; offeringsSkipped: number; offeringsFailed: number;
+  results: TeachingProfileRowResult[];
+}
+
+function TeachingProfileUploader({ onDone }: { onDone: () => void }) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [academicYear, setAcademicYear] = useState("2025/2026");
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<TeachingProfileBulkResponse | null>(null);
+
+  async function handleUpload() {
+    const file = fileRef.current?.files?.[0];
+    if (!file) {
+      setError("Choose a file first.");
+      return;
+    }
+    if (!academicYear.trim()) {
+      setError("Enter the academic year these course offerings belong to.");
+      return;
+    }
+    setUploading(true);
+    setError(null);
+    setResult(null);
+    try {
+      const res = await uploadFile<TeachingProfileBulkResponse>(
+        `/admin/bulk/lecturer-profiles?academicYear=${encodeURIComponent(academicYear.trim())}`,
+        file
+      );
+      setResult(res);
+      if (fileRef.current) fileRef.current.value = "";
+      onDone();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not process that file.");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <div>
+      <div className="gap-8" style={{ alignItems: "center", marginBottom: 12, flexWrap: "wrap" }}>
+        <button className="small secondary" onClick={() => downloadFile("/admin/bulk/lecturer-profiles/template", "lecturer-teaching-profile-bulk-import-template.xlsx")}>
+          Download template
+        </button>
+        <div className="field" style={{ marginBottom: 0 }}>
+          <label>Academic year</label>
+          <input value={academicYear} onChange={(e) => setAcademicYear(e.target.value)} style={{ width: 140 }} />
+        </div>
+        <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" />
+        <button className="small" onClick={handleUpload} disabled={uploading}>
+          {uploading ? "Uploading…" : "Upload"}
+        </button>
+      </div>
+      {error && <div className="banner banner-error">{error}</div>}
+      {result && (
+        <div>
+          <div className={`banner ${result.failed > 0 ? "banner-error" : "banner-success"}`}>
+            {result.matched} lecturer(s) matched, {result.failed} failed —{" "}
+            {result.offeringsCreated} offering(s) created, {result.offeringsSkipped} already existed, {result.offeringsFailed} failed.
+          </div>
+          {result.results.some((r) => r.status === "error" || r.issues.length > 0) && (
+            <div style={{ overflowX: "auto" }}>
+            <table>
+              <thead><tr><th>Row</th><th>Staff code</th><th>Name</th><th>Issues</th></tr></thead>
+              <tbody>
+                {result.results.filter((r) => r.status === "error" || r.issues.length > 0).map((r) => (
+                  <tr key={r.row}>
+                    <td>{r.row}</td>
+                    <td>{r.staffCode}</td>
+                    <td>{r.name}</td>
+                    <td>{r.reason ?? r.issues.join("; ")}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

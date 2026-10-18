@@ -38,11 +38,18 @@ function getTransport() {
   return cachedTransport;
 }
 
+export interface MailAttachment {
+  filename: string;
+  path: string;
+  cid?: string;
+}
+
 export interface SendMailInput {
   to: string;
   subject: string;
   text: string;
   html?: string;
+  attachments?: MailAttachment[];
 }
 
 export async function sendMail(input: SendMailInput): Promise<{ sent: boolean; reason?: string }> {
@@ -58,10 +65,82 @@ export async function sendMail(input: SendMailInput): Promise<{ sent: boolean; r
   }
 
   try {
-    await transport.sendMail({ from, to: input.to, subject: input.subject, text: input.text, html: input.html });
+    await transport.sendMail({
+      from,
+      to: input.to,
+      subject: input.subject,
+      text: input.text,
+      html: input.html,
+      attachments: input.attachments,
+    });
     return { sent: true };
   } catch (err) {
     console.error("[mailer] Failed to send email:", err);
     return { sent: false, reason: (err as Error).message };
   }
+}
+
+export interface BulkRecipient {
+  to: string;
+  subject: string;
+  text: string;
+  html?: string;
+  attachments?: MailAttachment[];
+}
+
+export interface BulkSendSummary {
+  attempted: number;
+  sent: number;
+  failed: number;
+  failures: { to: string; reason: string }[];
+  usedDevMode: boolean;
+}
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Sends a personalised message to many recipients without tripping the sending provider's rate
+ * limits — a free Gmail account throttles hard well before "a few hundred students" worth of
+ * mail, so this goes out in small batches with a short pause between them rather than firing
+ * every message at once. Meant to be run in the background (the caller responds to its own HTTP
+ * request immediately, then awaits this) — see routes/admin.ts's broadcast-email endpoint.
+ */
+export async function sendBulkMail(
+  recipients: BulkRecipient[],
+  opts: { batchSize?: number; delayMs?: number } = {}
+): Promise<BulkSendSummary> {
+  const batchSize = opts.batchSize ?? 12;
+  const delayMs = opts.delayMs ?? 2000;
+  const transportConfigured = !!getTransport();
+
+  const summary: BulkSendSummary = {
+    attempted: recipients.length,
+    sent: 0,
+    failed: 0,
+    failures: [],
+    usedDevMode: !transportConfigured,
+  };
+
+  for (let i = 0; i < recipients.length; i += batchSize) {
+    const batch = recipients.slice(i, i + batchSize);
+    const results = await Promise.all(
+      batch.map(async (r) => {
+        const result = await sendMail(r);
+        return { to: r.to, result };
+      })
+    );
+    for (const { to, result } of results) {
+      if (result.sent) {
+        summary.sent += 1;
+      } else if (transportConfigured) {
+        // Only counts as a real failure when SMTP is actually configured — otherwise every
+        // "not sent" is just dev-mode logging to the console, which isn't an error.
+        summary.failed += 1;
+        summary.failures.push({ to, reason: result.reason ?? "Unknown error" });
+      }
+    }
+    if (i + batchSize < recipients.length) await sleep(delayMs);
+  }
+
+  return summary;
 }

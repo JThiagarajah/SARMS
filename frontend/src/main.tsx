@@ -38,6 +38,7 @@ import { AdminCourses } from "./pages/admin/AdminCourses";
 import { AdminOfferings } from "./pages/admin/AdminOfferings";
 import { AdminAccounts } from "./pages/admin/AdminAccounts";
 import { AdminActivity } from "./pages/admin/AdminActivity";
+import { AdminBroadcast } from "./pages/admin/AdminBroadcast";
 
 import { MarkingSchemeSettings } from "./pages/settings/MarkingSchemeSettings";
 import { Profile } from "./pages/shared/Profile";
@@ -107,6 +108,7 @@ createRoot(document.getElementById("root")!).render(
                 <Route path="/admin/courses" element={<AdminCourses />} />
                 <Route path="/admin/offerings" element={<AdminOfferings />} />
                 <Route path="/admin/accounts" element={<AdminAccounts />} />
+                <Route path="/admin/broadcast" element={<AdminBroadcast />} />
                 <Route path="/admin/activity" element={<AdminActivity />} />
               </Route>
 

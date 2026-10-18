@@ -42,61 +42,107 @@ a { color: var(--navy-light); }
 
 .app-shell {
   display: flex;
+  flex-direction: column;
   min-height: 100vh;
 }
 
-.sidebar {
-  width: 250px;
-  flex-shrink: 0;
-  background: linear-gradient(180deg, var(--navy) 0%, var(--maroon-dark) 100%);
-  color: #fff;
-  display: flex;
-  flex-direction: column;
-  padding: 20px 0;
-  border-right: 3px solid var(--gold);
+/* ---------------------------------------------------------------------------------------------
+   Top navigation — a sticky "liquid glass" bar: a translucent, blurred maroon pane that lets the
+   page content read through behind it, with pill-shaped tabs that light up gold when active.
+   Replaces the old fixed sidebar; the same bar (no separate mobile layout) scrolls its tab row
+   horizontally once it runs out of width, so it works from phone to desktop without a hamburger.
+   --------------------------------------------------------------------------------------------- */
+.topnav {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: linear-gradient(120deg, rgba(50,13,44,0.97), rgba(33,9,29,0.98));
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(246,209,112,0.3);
+  box-shadow: 0 10px 26px rgba(20,6,17,0.35), inset 0 1px 0 rgba(255,255,255,0.06);
 }
 
-.sidebar-brand {
-  padding: 0 20px 18px;
-  border-bottom: 1px solid rgba(255,255,255,0.14);
-  margin-bottom: 12px;
+.topnav-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 10px 24px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 22px;
 }
-.sidebar-brand img.seal { width: 42px; height: 42px; flex-shrink: 0; }
-.sidebar-brand .name { font-family: var(--font-display); font-weight: 700; font-size: 1.2rem; letter-spacing: 0.02em; color: var(--gold-light); }
-.sidebar-brand .sub { font-size: 0.7rem; color: #d9c9dd; margin-top: 2px; line-height: 1.4; }
 
-.sidebar nav { display: flex; flex-direction: column; gap: 2px; padding: 0 10px; flex: 1; }
-.sidebar nav a {
+.topnav-brand { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.topnav-brand img.seal {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px rgba(246,209,112,0.5), 0 2px 8px rgba(0,0,0,0.3);
+}
+.topnav-brand-text { display: flex; flex-direction: column; line-height: 1.2; }
+.topnav-brand-text .name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.08rem;
+  letter-spacing: 0.02em;
+  color: var(--gold-light);
+}
+.topnav-brand-text .sub { font-size: 0.66rem; color: rgba(228,214,231,0.85); white-space: nowrap; }
+
+.topnav-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex: 1;
+  min-width: 0;
+  padding: 2px;
+  /* Fades the scroll edges instead of hard-clipping a tab mid-word when the row overflows. */
+  mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+}
+.topnav-tabs::-webkit-scrollbar { display: none; }
+
+.topnav-tab {
+  flex-shrink: 0;
   color: #e4d6e7;
   text-decoration: none;
-  padding: 10px 12px;
-  border-radius: 8px;
-  font-size: 0.92rem;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  transition: background 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.1s;
 }
-.sidebar nav a:hover { background: rgba(255,255,255,0.08); }
-.sidebar nav a.active { background: var(--gold); color: var(--maroon-dark); font-weight: 700; }
+.topnav-tab:hover { background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.18); color: #fff; }
+.topnav-tab:active { transform: translateY(1px); }
+.topnav-tab.active {
+  background: rgba(255,255,255,0.14);
+  color: var(--gold-light);
+  border-color: rgba(246,209,112,0.45);
+  box-shadow: inset 0 0 0 1px rgba(246,209,112,0.25), 0 3px 10px rgba(0,0,0,0.2);
+}
 
-.sidebar-user {
-  padding: 14px 20px 4px;
-  border-top: 1px solid rgba(255,255,255,0.14);
-  margin-top: 10px;
-}
-.sidebar-user .who { font-size: 0.85rem; font-weight: 600; }
-.sidebar-user .role { font-size: 0.75rem; color: #d9c9dd; margin-bottom: 10px; }
-.sidebar-user button {
-  width: 100%;
+.topnav-user { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.topnav-user-info { display: flex; flex-direction: column; line-height: 1.25; text-align: right; }
+.topnav-user-info .who { font-size: 0.82rem; font-weight: 600; color: #fff; }
+.topnav-user-info .role { font-size: 0.7rem; color: rgba(228,214,231,0.85); }
+.topnav-logout {
   background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.16);
   color: #fff;
-  border: none;
-  padding: 8px;
-  border-radius: 8px;
+  padding: 8px 14px;
+  border-radius: 999px;
   cursor: pointer;
-  font-size: 0.82rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background 0.15s;
 }
-.sidebar-user button:hover { background: rgba(255,255,255,0.18); }
+.topnav-logout:hover { background: rgba(255,255,255,0.2); }
 
 .main-column {
   flex: 1;
@@ -110,6 +156,7 @@ a { color: var(--navy-light); }
   padding: 28px 36px 40px;
   max-width: 1180px;
   width: 100%;
+  margin: 0 auto;
 }
 
 .site-footer {
@@ -120,6 +167,7 @@ a { color: var(--navy-light); }
 }
 .site-footer-inner {
   max-width: 1180px;
+  margin: 0 auto;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -131,41 +179,6 @@ a { color: var(--navy-light); }
 .site-footer-inner strong { color: var(--navy); }
 .site-footer-contact { text-align: right; }
 .site-footer-contact a { color: var(--navy-light); }
-
-/* Mobile top bar (hamburger + brand) — hidden on desktop, shown only under the breakpoint below. */
-.mobile-topbar {
-  display: none;
-  align-items: center;
-  justify-content: space-between;
-  background: linear-gradient(180deg, var(--navy) 0%, var(--maroon-dark) 100%);
-  border-bottom: 3px solid var(--gold);
-  padding: 10px 16px;
-  position: sticky;
-  top: 0;
-  z-index: 30;
-}
-.mobile-topbar-brand { display: flex; align-items: center; gap: 10px; color: var(--gold-light); font-family: var(--font-display); font-weight: 700; }
-.mobile-topbar-brand img.seal { width: 30px; height: 30px; }
-.hamburger {
-  background: rgba(255,255,255,0.12);
-  border: none;
-  border-radius: 8px;
-  width: 40px;
-  height: 36px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  cursor: pointer;
-  padding: 0;
-}
-.hamburger span { display: block; width: 20px; height: 2px; background: #fff; border-radius: 2px; }
-.hamburger:hover { background: rgba(255,255,255,0.22); }
-
-.sidebar-scrim {
-  display: none;
-}
 
 /* Tabs (Lecturer ICA / Final marks / Results) */
 .tab-bar {
@@ -254,6 +267,12 @@ a { color: var(--navy-light); }
 }
 .card h2 { font-family: var(--font-display); margin: 0 0 14px; font-size: 1.15rem; color: var(--navy); }
 .card h3 { margin: 0 0 10px; font-size: 0.95rem; color: var(--navy); }
+
+/* A visually distinct card for irreversible, system-wide actions (e.g. the full system reset on
+   the Accounts page) — red top border instead of the usual gold, so it reads as different in kind
+   from every other card on the page, not just another form. */
+.card-danger { border-top: 3px solid var(--red); }
+.card-danger h2 { color: var(--red); }
 
 .grid { display: grid; gap: 18px; }
 .grid-2 { grid-template-columns: repeat(2, 1fr); }
@@ -368,6 +387,162 @@ label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-m
 .login-card .forgot-link { display: block; text-align: center; margin-top: 14px; font-size: 0.82rem; }
 .login-card .footer-note { text-align: center; font-size: 0.72rem; color: var(--text-muted); margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--border); }
 
+/* ---------------------------------------------------------------------------------------------
+   Desktop-only split login screen. Below the 861px breakpoint (matching the mobile pass further
+   down this file) .login-split stays display:none and the plain centred .login-card — untouched
+   — is what renders instead. At 861px and up it's the reverse: a marketing-style left panel next
+   to the same sign-in form, replacing the lone centred card with something that uses the extra
+   width instead of just floating in the middle of it.
+   --------------------------------------------------------------------------------------------- */
+.login-root { min-height: 100vh; }
+.login-split { display: none; }
+
+.login-mobile-only { display: flex; }
+
+@media (min-width: 861px) {
+  .login-mobile-only { display: none; }
+
+  .login-split {
+    display: flex;
+    min-height: 100vh;
+  }
+
+  .login-hero {
+    flex: 1.15;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 56px 64px 64px;
+    overflow: hidden;
+    /* Two soft glows over the maroon gradient — no grid lines. A hard blueprint-style grid read
+       as more "technical mockup" than "official university system"; a plain gradient plus a
+       faint oversized seal watermark (below, via ::before) reads as considered instead. */
+    background-image:
+      radial-gradient(circle at 10% 6%, rgba(201,154,46,0.22), transparent 52%),
+      radial-gradient(circle at 92% 92%, rgba(90,26,77,0.55), transparent 58%),
+      linear-gradient(160deg, var(--navy) 0%, var(--maroon-dark) 100%);
+  }
+  /* Large, near-invisible seal watermark bottom-right — a subtle, official texture in place of
+     the grid, tucked behind the brand/headline/letter (which all sit at z-index: 1). */
+  .login-hero::before {
+    content: "";
+    position: absolute;
+    z-index: 0;
+    right: -110px;
+    bottom: -110px;
+    width: 460px;
+    height: 460px;
+    background: url("/assets/vau-seal.png") no-repeat center / contain;
+    opacity: 0.05;
+    transform: rotate(-6deg);
+    pointer-events: none;
+  }
+  /* The brand block sits at the true top of the panel (natural flow, not vertically centred);
+     login-hero-content then takes the rest of the height and centres the headline + letter
+     within THAT remaining space, so the logo reads as "top middle" instead of floating in the
+     middle of the whole panel with a dead gap above it. */
+  .login-hero-content {
+    flex: 1;
+    width: 100%;
+    max-width: 460px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Logo big and centered at the top of the panel, university name centered on the line below it
+     — a standalone header rather than part of the (left-aligned) text column beneath it. */
+  .login-hero-brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 10px;
+    flex-shrink: 0;
+    margin-bottom: 56px;
+    position: relative;
+    z-index: 1;
+  }
+  .login-hero-brand .seal { width: 100px; height: 100px; border-radius: 50%; box-shadow: 0 0 0 3px rgba(246,209,112,0.5), 0 4px 16px rgba(0,0,0,0.35); }
+  .login-hero-brand .name { font-family: var(--font-display); font-weight: 700; font-size: 1.55rem; color: #fff; }
+  .login-hero-brand .sub { font-size: 0.8rem; color: rgba(228,214,231,0.85); }
+
+  .login-hero-headline { font-family: var(--font-display); font-size: 2.5rem; line-height: 1.15; color: #fff; margin: 0 0 24px; }
+  .login-hero-headline span { color: var(--gold-light); }
+
+  /* A short well-wish to students, styled like a handwritten note rather than a data widget —
+     replaces the earlier "this semester" activity preview in the same slot. */
+  .login-hero-letter {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.14);
+    border-left: 3px solid var(--gold);
+    /* Square off the left corners instead of rounding all four — the 3px accent bar is thicker
+       than the 1px border on the other three sides, and rounding every corner the same amount
+       left a small gold notch poking past the curve where the thick and thin edges met. */
+    border-radius: 0 10px 10px 0;
+    padding: 20px 22px 20px 24px;
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+  }
+  .login-hero-letter p {
+    margin: 0;
+    color: #f1e7ee;
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 1.02rem;
+    line-height: 1.7;
+  }
+  .login-hero-letter-sign {
+    margin-top: 14px;
+    font-size: 0.76rem;
+    color: var(--gold-light);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+
+  .login-panel {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(165deg, #f7f3ec 0%, #efe4cd 100%);
+    padding: 48px;
+  }
+  /* A warm ivory card instead of the plain white .login-card uses elsewhere — stark white read
+     cold against the maroon/gold theme; this keeps the same near-white brightness (so text stays
+     easy to read) but tints it into the same warm palette as everything around it. Scoped to the
+     desktop card only — the mobile login card is left exactly as it was. */
+  .login-card-desktop {
+    background: linear-gradient(165deg, #fffdf8 0%, #faf1de 100%);
+    box-shadow: 0 24px 60px rgba(59,15,51,0.18), 0 2px 10px rgba(59,15,51,0.08);
+  }
+  .login-card-desktop button[type="submit"] {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
+    box-shadow: 0 8px 20px rgba(59,15,51,0.35);
+  }
+  .login-card-desktop button[type="submit"]:hover:not(:disabled) {
+    background: linear-gradient(135deg, var(--navy-light) 0%, var(--navy) 100%);
+  }
+
+  .login-firsttime {
+    margin-top: 18px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: var(--amber-bg);
+    color: #6b551a;
+    font-size: 0.78rem;
+    line-height: 1.55;
+  }
+  .login-firsttime strong { color: var(--navy); }
+}
+
+@media (min-width: 1400px) {
+  .login-hero { padding: 72px 110px; }
+}
+
 .muted { color: var(--text-muted); }
 .text-right { text-align: right; }
 .mono { font-variant-numeric: tabular-nums; }
@@ -376,38 +551,15 @@ label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-m
 .empty-state { padding: 30px; text-align: center; color: var(--text-muted); font-size: 0.9rem; }
 
 /* ---------------------------------------------------------------------------------------------
-   Mobile responsive pass. Below the breakpoint the fixed sidebar becomes a hidden dropdown panel
-   toggled by the hamburger button in the mobile top bar (see Layout.tsx); above it, nothing here
-   changes the desktop layout at all.
+   Mobile responsive pass. The top nav bar itself needs no separate mobile layout (its tab row
+   already scrolls horizontally at any width) — this just trims the brand subtitle and user info
+   text to keep the bar compact, and reflows the page content below it.
    --------------------------------------------------------------------------------------------- */
 @media (max-width: 860px) {
-  .mobile-topbar { display: flex; }
-  .app-shell { flex-direction: column; }
-
-  .sidebar {
-    display: none;
-    position: fixed;
-    top: 57px;
-    left: 0;
-    right: 0;
-    width: auto;
-    max-height: calc(100vh - 57px);
-    overflow-y: auto;
-    z-index: 40;
-    border-right: none;
-    border-bottom: 3px solid var(--gold);
-    box-shadow: 0 12px 24px rgba(0,0,0,0.25);
-  }
-  .sidebar.sidebar-open { display: flex; }
-  .sidebar .sidebar-brand { display: none; }
-
-  .sidebar-scrim {
-    display: block;
-    position: fixed;
-    inset: 57px 0 0 0;
-    background: rgba(20, 6, 17, 0.45);
-    z-index: 35;
-  }
+  .topnav-inner { padding: 8px 14px; gap: 12px; }
+  .topnav-brand-text .sub { display: none; }
+  .topnav-user-info { display: none; }
+  .topnav-logout { padding: 7px 12px; }
 
   .main { padding: 18px 16px 32px; }
   .page-header h1 { font-size: 1.35rem; }
@@ -431,4 +583,7 @@ label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-m
 @media (max-width: 480px) {
   .stat-card .value { font-size: 1.5rem; }
   .card h2 { font-size: 1.02rem; }
+
+  .topnav-brand-text .name { font-size: 0.95rem; }
+  .topnav-tab { padding: 7px 13px; font-size: 0.8rem; }
 }

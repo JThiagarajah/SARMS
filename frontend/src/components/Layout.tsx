@@ -1,5 +1,4 @@
-import { useEffect, useState } from "react";
-import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { ROLE_LABELS } from "../lib/roles";
 import type { Role } from "../api/client";
@@ -47,6 +46,7 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { to: "/admin/courses", label: "Course Units" },
     { to: "/admin/offerings", label: "Course Offerings" },
     { to: "/admin/accounts", label: "Accounts" },
+    { to: "/admin/broadcast", label: "Broadcast Email" },
     { to: "/admin/activity", label: "Activity Log" },
     { to: "/profile", label: "My Profile" },
   ],
@@ -55,74 +55,47 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
 export function Layout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
-  const [navOpen, setNavOpen] = useState(false);
-
-  // Close the mobile nav dropdown automatically whenever the route changes, so tapping a link
-  // doesn't leave the dropdown hanging open over the new page.
-  useEffect(() => {
-    setNavOpen(false);
-  }, [location.pathname]);
 
   if (!user) return null;
   const items = NAV_BY_ROLE[user.role] ?? [];
 
-  const navContent = (
-    <>
-      <nav>
-        {items.map((item) => (
-          <NavLink key={item.to} to={item.to} end={item.end} className={({ isActive }) => (isActive ? "active" : "")}>
-            {item.label}
-          </NavLink>
-        ))}
-      </nav>
-      <div className="sidebar-user">
-        <div className="who">{user.fullName}</div>
-        <div className="role">{ROLE_LABELS[user.role]}</div>
-        <button
-          onClick={() => {
-            logout();
-            navigate("/login");
-          }}
-        >
-          Log out
-        </button>
-      </div>
-    </>
-  );
-
   return (
     <div className="app-shell">
-      {/* Mobile-only top bar: seal + system name + hamburger toggle. Hidden on desktop widths via
-          CSS; the sidebar below is what shows there instead. */}
-      <div className="mobile-topbar">
-        <div className="mobile-topbar-brand">
-          <img className="seal" src="/assets/vau-seal.png" alt="University of Vavuniya seal" />
-          <span>SARMS</span>
-        </div>
-        <button
-          className="hamburger"
-          aria-label={navOpen ? "Close navigation menu" : "Open navigation menu"}
-          aria-expanded={navOpen}
-          onClick={() => setNavOpen((v) => !v)}
-        >
-          <span />
-          <span />
-          <span />
-        </button>
-      </div>
+      <header className="topnav">
+        <div className="topnav-inner">
+          <div className="topnav-brand">
+            <img className="seal" src="/assets/vau-seal.png" alt="University of Vavuniya seal" />
+            <div className="topnav-brand-text">
+              <span className="name">SARMS</span>
+              <span className="sub">University of Vavuniya · Dept. of Physical Science</span>
+            </div>
+          </div>
 
-      <aside className={`sidebar ${navOpen ? "sidebar-open" : ""}`}>
-        <div className="sidebar-brand">
-          <img className="seal" src="/assets/vau-seal.png" alt="University of Vavuniya seal" />
-          <div>
-            <div className="name">SARMS</div>
-            <div className="sub">Student Academic Results &amp; GPA Management System — University of Vavuniya, Dept. of Physical Science</div>
+          <nav className="topnav-tabs" aria-label="Primary">
+            {items.map((item) => (
+              <NavLink key={item.to} to={item.to} end={item.end} className={({ isActive }) => `topnav-tab ${isActive ? "active" : ""}`}>
+                {item.label}
+              </NavLink>
+            ))}
+          </nav>
+
+          <div className="topnav-user">
+            <div className="topnav-user-info">
+              <span className="who">{user.fullName}</span>
+              <span className="role">{ROLE_LABELS[user.role]}</span>
+            </div>
+            <button
+              className="topnav-logout"
+              onClick={() => {
+                logout();
+                navigate("/login");
+              }}
+            >
+              Log out
+            </button>
           </div>
         </div>
-        {navContent}
-      </aside>
-      {navOpen && <div className="sidebar-scrim" onClick={() => setNavOpen(false)} />}
+      </header>
 
       <div className="main-column">
         <main className="main">

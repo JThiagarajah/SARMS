@@ -61,7 +61,7 @@ export function AdminOrganisation() {
   }
 
   async function deleteDept(d: Department) {
-    if (!window.confirm(`Delete department "${d.name}"? This only works while no programmes or staff are linked to it.`)) return;
+    if (!window.confirm(`Delete department "${d.name}"? This also permanently deletes every programme, staff account and student still linked to it — and everything those own in turn (course units, offerings, enrolments, marks, results). This can be the most destructive action in SARMS. This cannot be undone.`)) return;
     setDeptBusy(d.id);
     setError(null);
     try {
@@ -109,7 +109,7 @@ export function AdminOrganisation() {
   }
 
   async function deleteProg(p: Programme) {
-    if (!window.confirm(`Delete programme "${p.name}"? This only works while no course units or students are linked to it.`)) return;
+    if (!window.confirm(`Delete programme "${p.name}"? This also permanently deletes every student and course unit still linked to it — and everything those own in turn (offerings, enrolments, marks, results). This cannot be undone.`)) return;
     setProgBusy(p.id);
     setError(null);
     try {
@@ -130,8 +130,8 @@ export function AdminOrganisation() {
         <h1>Departments &amp; Programmes</h1>
         <p>
           Faculty and department structure, and the degree programmes offered under each department. A department or
-          programme name must be unique, and either can be edited or removed as long as nothing else (staff, students,
-          course units) is linked to it yet.
+          programme name must be unique. Deleting either cascades — it also removes everything still linked underneath
+          it (staff, students, course units, offerings, marks, results), so double-check before confirming.
         </p>
       </div>
       {error && <div className="banner banner-error">{error}</div>}

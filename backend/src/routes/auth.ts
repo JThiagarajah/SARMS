@@ -5,6 +5,7 @@ import { generateOtp, hashPassword, signToken, verifyPassword } from "../lib/aut
 import { requireAuth } from "../middleware/auth";
 import { logActivity } from "../lib/activityLog";
 import { sendMail } from "../lib/mailer";
+import { passwordResetOtpEmail } from "../lib/emailTemplates";
 import { UserRow } from "../lib/types";
 
 const router = Router();
@@ -77,23 +78,32 @@ const forgotPasswordSchema = z.object({
 });
 
 // Step 1 of "forgot password": prove you know both the username AND the personal email address
-// on file for it. Always responds with the same generic message either way (so the response can't
-// be used to enumerate valid usernames) — the OTP is only actually created and emailed when the
-// two match. If no SMTP is configured, the OTP is echoed back in the response under `devOtp` (and
-// logged server-side) so the flow is still testable — see backend/.env for how to wire up real email.
+// on file for it. By request, a mismatch on either field now returns an explicit "Username or
+// email is incorrect" error rather than the old generic, non-revealing response.
+//
+// Security note: this makes it possible to enumerate valid usernames (an attacker can tell a
+// username exists because the error changes once the email is right), which is why the generic
+// message was there in the first place. That's a deliberate tradeoff made here at the user's
+// request, not an oversight — worth knowing if SARMS ever needs to harden this later (e.g. by
+// rate-limiting the endpoint, since enumeration alone doesn't expose a password).
+//
+// If no SMTP is configured, the OTP is echoed back in the response under `devOtp` (and logged
+// server-side) so the flow is still testable — see backend/.env for how to wire up real email.
 router.post("/forgot-password", async (req, res) => {
   const parsed = forgotPasswordSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: "Username and email are required." });
   const { username, email } = parsed.data;
 
-  const genericResponse = {
-    ok: true,
-    message: "If that username and personal email match our records, a verification code has been sent to that email.",
-  };
+  const mismatchError = { error: "Username or email is incorrect." };
 
   const row = (await db.prepare("SELECT * FROM users WHERE username = ?").get(username)) as unknown as UserRow | undefined;
-  if (!row || !row.active || !row.personal_email) return res.json(genericResponse);
-  if (row.personal_email.trim().toLowerCase() !== email.trim().toLowerCase()) return res.json(genericResponse);
+  if (!row || !row.active || !row.personal_email) return res.status(400).json(mismatchError);
+  if (row.personal_email.trim().toLowerCase() !== email.trim().toLowerCase()) return res.status(400).json(mismatchError);
+
+  const genericResponse = {
+    ok: true,
+    message: "A verification code has been sent to that email.",
+  };
 
   const otp = generateOtp();
   await db.prepare(
@@ -107,17 +117,13 @@ router.post("/forgot-password", async (req, res) => {
   );
   await logActivity(row.id, "PASSWORD_RESET_REQUESTED", "User", row.id);
 
-  const mailResult = await sendMail({
-    to: row.personal_email,
-    subject: "SARMS — Password reset code",
-    text:
-      `Hello ${row.full_name},\n\n` +
-      `A password reset was requested for your SARMS account (username: ${row.username}).\n\n` +
-      `Your verification code is: ${otp}\n\n` +
-      `This code expires in ${OTP_VALIDITY_MINUTES} minutes. If you didn't request this, you can ` +
-      `safely ignore this email — your password will not be changed.\n\n` +
-      `— SARMS, University of Vavuniya`,
+  const { subject, text, html, attachments } = passwordResetOtpEmail({
+    fullName: row.full_name,
+    username: row.username,
+    otp,
+    validityMinutes: OTP_VALIDITY_MINUTES,
   });
+  const mailResult = await sendMail({ to: row.personal_email, subject, text, html, attachments });
 
   res.json(mailResult.sent ? genericResponse : { ...genericResponse, devOtp: otp, devNote: "SMTP not configured on the server — showing the code here instead of emailing it." });
 });

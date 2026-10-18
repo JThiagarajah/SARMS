@@ -35,6 +35,10 @@ interface BulkResponse { created: number; failed: number; results: BulkRowResult
 
 const STAFF_ROLES = ["LECTURER", "HOD", "DEAN", "CHAIRMAN_EXAM_BRANCH", "EXAMINATION_BRANCH", "SUPER_ADMIN"];
 
+// Must match RESET_CONFIRMATION_PHRASE in backend/src/routes/admin.ts exactly — the server checks
+// it independently, this is just what unlocks the button on-screen.
+const RESET_PHRASE = "RESET SARMS";
+
 export function AdminAccounts() {
   const departments = useApi<Department[]>(() => api.get("/admin/departments"));
   const programmes = useApi<Programme[]>(() => api.get("/admin/programmes"));
@@ -52,6 +56,11 @@ export function AdminAccounts() {
   const [student, setStudent] = useState({ username: "", fullName: "", email: "", registrationNo: "", programmeId: "", level: "1", admissionYear: "2025", personalEmail: "" });
   const [editingEmailFor, setEditingEmailFor] = useState<string | null>(null);
   const [emailDraft, setEmailDraft] = useState("");
+
+  const [resetConfirmText, setResetConfirmText] = useState("");
+  const [resetting, setResetting] = useState(false);
+  const [resetError, setResetError] = useState<string | null>(null);
+  const [resetSuccess, setResetSuccess] = useState<{ usersDeleted: number } | null>(null);
 
   async function createStaff(e: FormEvent) {
     e.preventDefault();
@@ -118,7 +127,7 @@ export function AdminAccounts() {
   }
 
   async function deleteAccount(u: UserRow) {
-    if (!window.confirm(`Delete the account for ${u.full_name} (${u.username})? This only works while nothing in SARMS references it yet, and cannot be undone.`)) return;
+    if (!window.confirm(`Delete the account for ${u.full_name} (${u.username})? This also permanently deletes everything that's genuinely theirs — as a student: their enrolments, marks, results and GPA; as a lecturer: every course offering they were assigned and everyone enrolled under it. This cannot be undone.`)) return;
     setBusyId(u.id);
     setRowError(null);
     try {
@@ -128,6 +137,29 @@ export function AdminAccounts() {
       setRowError(err instanceof ApiError ? err.message : "Could not delete this account.");
     } finally {
       setBusyId(null);
+    }
+  }
+
+  async function resetSystem() {
+    if (resetConfirmText !== RESET_PHRASE) return;
+    if (
+      !window.confirm(
+        "Last chance to back out. This permanently deletes every account except your own — every student, lecturer and other staff member — along with all their enrolments, marks, results, GPA records, course offerings and teaching-assignment requests. Departments, programmes and the course catalog are kept. This cannot be undone. Continue?"
+      )
+    )
+      return;
+    setResetting(true);
+    setResetError(null);
+    setResetSuccess(null);
+    try {
+      const res = await api.post<{ ok: true; usersDeleted: number }>("/admin/system/reset", { confirm: resetConfirmText });
+      setResetSuccess({ usersDeleted: res.usersDeleted });
+      setResetConfirmText("");
+      users.reload();
+    } catch (err) {
+      setResetError(err instanceof ApiError ? err.message : "Could not reset the system.");
+    } finally {
+      setResetting(false);
     }
   }
 
@@ -215,8 +247,8 @@ export function AdminAccounts() {
             )}
             <div className="form-row">
               <div className="field">
-                <label>Personal email (optional)</label>
-                <input type="email" value={staff.personalEmail} onChange={(e) => setStaff((s) => ({ ...s, personalEmail: e.target.value }))} placeholder="Used only for forgot-password verification" />
+                <label>Personal email</label>
+                <input type="email" value={staff.personalEmail} onChange={(e) => setStaff((s) => ({ ...s, personalEmail: e.target.value }))} placeholder="Their username and one-time password are emailed here" required />
               </div>
             </div>
             <button type="submit">Create staff account</button>
@@ -244,8 +276,8 @@ export function AdminAccounts() {
             </div>
             <div className="form-row">
               <div className="field">
-                <label>Personal email (optional)</label>
-                <input type="email" value={student.personalEmail} onChange={(e) => setStudent((s) => ({ ...s, personalEmail: e.target.value }))} placeholder="Used only for forgot-password verification" />
+                <label>Personal email</label>
+                <input type="email" value={student.personalEmail} onChange={(e) => setStudent((s) => ({ ...s, personalEmail: e.target.value }))} placeholder="Their username and one-time password are emailed here" required />
               </div>
             </div>
             <button type="submit">Create student account</button>
@@ -300,6 +332,37 @@ export function AdminAccounts() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      <div className="card card-danger">
+        <h2>Danger zone — reset the whole system</h2>
+        <p className="muted" style={{ marginTop: -6 }}>
+          Permanently deletes every account except the one you're logged in with — every student, lecturer, and
+          other staff member — along with everything that's theirs: enrolments, marks, results, GPA records,
+          course offerings, and teaching-assignment requests. Marking scheme settings and the activity log are
+          cleared too. Departments, programmes, and the course catalog are kept, so the system is immediately
+          usable again afterward. This cannot be undone.
+        </p>
+        {resetError && <div className="banner banner-error">{resetError}</div>}
+        {resetSuccess && (
+          <div className="banner banner-success">
+            System reset — {resetSuccess.usersDeleted} account(s) deleted. Only your own account remains.
+          </div>
+        )}
+        <div className="gap-8" style={{ alignItems: "center", flexWrap: "wrap" }}>
+          <div className="field" style={{ marginBottom: 0 }}>
+            <label>{`Type "${RESET_PHRASE}" to confirm`}</label>
+            <input
+              value={resetConfirmText}
+              onChange={(e) => setResetConfirmText(e.target.value)}
+              placeholder={RESET_PHRASE}
+              style={{ width: 220 }}
+            />
+          </div>
+          <button className="danger" onClick={resetSystem} disabled={resetConfirmText !== RESET_PHRASE || resetting}>
+            {resetting ? "Resetting…" : "Reset system"}
+          </button>
+        </div>
       </div>
     </div>
   );

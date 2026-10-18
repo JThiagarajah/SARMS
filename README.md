@@ -141,36 +141,68 @@ npm run dev   # starts the app on http://localhost:5173 (proxies /api to :4000)
 
 Open http://localhost:5173 and sign in with any of the demo accounts below.
 
-### Email delivery (forgot password)
+### Email delivery (account creation, forgot password, admin broadcasts)
 
-SARMS has no email server of its own, so `backend/.env` ships with the SMTP fields blank and the
-app runs in **dev mode**: requesting a reset prints the one-time code to the backend's console
-*and* returns it directly in the API response (shown on the "Forgot password" page itself), so the
-whole flow — request code, reset password, sign in with the new one — is fully testable without
-any email setup. This mirrors how one-time account passwords already work elsewhere in SARMS
-(shown on-screen for the Super Admin to hand out, since there's no email integration).
+SARMS has no email server of its own, so `backend/.env` ships with `SMTP_PASS` blank and the app
+runs in **dev mode**: a password-reset request prints the one-time code to the backend's console
+*and* returns it directly in the API response (shown on the "Forgot password" page itself), and a
+new account's one-time password is still shown on-screen / in the downloadable PDF like before —
+so every flow is fully testable without any email setup. Broadcast emails (below) just get logged
+to the console instead of sent.
 
-To send real emails instead, fill in `backend/.env`:
+Three things go out by email once SMTP is configured:
+
+- **Welcome email** — sent automatically whenever the Super Admin creates an account (single or
+  bulk import) with an auto-generated one-time password, carrying the username and password to
+  that account's **personal email** — which is why personal email is now a *required* field when
+  creating an account (single form and bulk-import spreadsheet alike), not just an optional
+  forgot-password extra. It's a personal address the person actually checks, rather than an
+  institutional inbox that might not be live yet for a brand-new account.
+- **Password reset code** — sent on every "forgot password" request that matches a real account
+  and its personal email on file.
+- **Broadcast email** — Super Admin → Accounts → *Broadcast Email*, or `POST /api/admin/broadcast-email`,
+  sends one message to all students, all staff, all lecturers, or everyone at once — to each
+  account's **personal email**, same as the other two, so it lands somewhere the person actually
+  checks (an account's institutional address may not be provisioned/live, especially for a
+  freshly-created one). Only accounts with a personal email on file are counted/reached; the
+  compose screen shows the recipient count before you send. Large audiences are sent in small
+  batches with a short pause between them (see `sendBulkMail` in `backend/src/lib/mailer.ts`) to
+  stay under Gmail's rate limits; the request returns immediately with a recipient count while
+  sending continues in the background, and the outcome is logged to the server console plus an
+  activity-log entry.
+
+`backend/.env` is already set up to send through `joshuathiagarajah@gmail.com` — the only step left
+is generating the App Password:
 
 ```
 SMTP_HOST="smtp.gmail.com"
 SMTP_PORT=587
-SMTP_USER="your-address@gmail.com"
+SMTP_USER="joshuathiagarajah@gmail.com"
 SMTP_PASS="your-16-character-app-password"
-SMTP_FROM="your-address@gmail.com"
+SMTP_FROM="SARMS <joshuathiagarajah@gmail.com>"
 ```
 
-For Gmail, `SMTP_PASS` must be an **App Password** (https://myaccount.google.com/apppasswords),
-never your normal account password — Gmail rejects plain-password SMTP logins outright, and a
-real password should never be pasted into a `.env` file regardless. Restart the backend after
-editing `.env`; once `SMTP_HOST`/`SMTP_USER`/`SMTP_PASS` are all set, `devOtp` disappears from the
-API response and the code is only ever sent by email. The demo Super Admin account (`admin`) is
-seeded with `jestudio22@gmail.com` as its personal email specifically for testing this end-to-end.
+`SMTP_PASS` must be a Gmail **App Password** (https://myaccount.google.com/apppasswords, requires
+2-Step Verification to be turned on first), never the normal account password — Gmail rejects
+plain-password SMTP logins outright, and a real password should never be pasted into a `.env` file
+regardless. Restart the backend after editing `.env`; once `SMTP_PASS` is set, `devOtp` disappears
+from the forgot-password API response and welcome/broadcast emails stop being dev-mode-only. A free
+Gmail account tops out around 500 sends/day — fine for OTPs and a few hundred students, but if the
+whole university's staff+student body needs broadcasting regularly, move `SMTP_HOST`/`SMTP_USER`/
+`SMTP_PASS` to a transactional provider (Brevo, Resend, Amazon SES) instead; nothing else in the
+code needs to change, since they're all SMTP-compatible. The demo Super Admin account (`admin`) is
+seeded with `jestudio22@gmail.com` as its personal email specifically for testing forgot-password
+end-to-end.
 
-The **personal email** used for password recovery is a separate field from an account's regular
-institutional email — it's optional, set per-account by the Super Admin (single-account form,
-"Edit"/"Set" in the accounts table, or the "Personal Email" column in the bulk-import spreadsheet),
-and it's the *only* thing the forgot-password flow ever reads or emails.
+The **personal email** is a separate field from an account's institutional email, and is where
+every outgoing SARMS email — welcome, password-recovery code, and broadcast alike — is sent. It's
+*required* when a Super Admin creates an account (single-account form, or the "Personal Email"
+column in the bulk-import spreadsheet), but can still be edited or cleared afterwards for an
+existing account ("Edit"/"Set" in the accounts table), e.g. if it was mistyped or the person's
+personal address changes. The **institutional email** (`Email` column / field) is only used as the
+account's on-record contact address — no automated email in SARMS sends to it. (The demo/seed
+accounts other than `admin` predate this requirement and have no personal email on file, so they
+won't receive a welcome or broadcast email until one is added via "Edit"/"Set".)
 
 ## Demo accounts
 
@@ -210,7 +242,8 @@ backend/
     db/            schema.sql, client.ts (Postgres pool + async query helpers), migrate.ts,
                      resetDb.ts, seed.ts
     lib/            grading engine, marking-scheme lookup, GPA service, auth, activity log,
-                     excel.ts (xlsx read/write helpers), mailer.ts (SMTP/dev-mode email)
+                     excel.ts (xlsx read/write helpers), mailer.ts (SMTP/dev-mode email,
+                     batched bulk send), emailTemplates.ts (branded HTML email templates)
     middleware/     JWT auth + role-guard middleware
     routes/         auth (incl. forgot/reset password), admin, bulkAccounts, academic, ica,
                      results, settings, gpa, pdf
@@ -381,7 +414,7 @@ it at `backend/`, set the build command to `npm install && npm run build` and th
 | `JWT_SECRET` | a long random string (not the dev default) |
 | `JWT_EXPIRES_IN` | `8h` (or whatever session length you want) |
 | `FRONTEND_URL` | your deployed frontend's URL, once you have it (locks down CORS to just that origin) |
-| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` / `SMTP_FROM` | only if you want real forgot-password emails — see **Email delivery** above |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` / `SMTP_FROM` | only if you want real welcome / forgot-password / broadcast emails — see **Email delivery** above |
 
 Render's free web-service tier requires no credit card, but it **sleeps after 15 minutes of no
 traffic** and takes roughly a minute to wake back up on the next request — noticeable, but not

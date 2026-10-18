@@ -6,6 +6,10 @@ interface Programme { id: string; name: string }
 interface Course {
   id: string; code: string; name: string; theory_credit: number; practical_credit: number;
   category: string; component_type: string; programme_id: string; level: number; semester: number;
+  // Contact-hour counts captured by the course bulk import — informational only (not part of the
+  // manual add/edit form; nothing in the grading engine reads these). May be null for courses
+  // created before this field existed or added manually.
+  weekly_hours: number | null; theory_hours: number | null; practical_hours: number | null;
 }
 
 const EMPTY = {
@@ -132,7 +136,7 @@ export function AdminCourses() {
   }
 
   async function deleteCourse(c: Course) {
-    if (!window.confirm(`Delete course unit ${c.code} — ${c.name}? This cannot be undone.`)) return;
+    if (!window.confirm(`Delete course unit ${c.code} — ${c.name}? This also permanently deletes every offering, enrolment, mark and result tied to it. This cannot be undone.`)) return;
     setDeletingId(c.id);
     setError(null);
     try {
@@ -159,12 +163,12 @@ export function AdminCourses() {
         {(courses.data ?? []).length === 0 ? <div className="empty-state">No course units yet.</div> : (
           <div style={{ overflowX: "auto" }}>
           <table>
-            <thead><tr><th>Code</th><th>Name</th><th>Ct / Cp</th><th>Category</th><th>Component</th><th>Programme</th><th>Lvl/Sem</th><th></th></tr></thead>
+            <thead><tr><th>Code</th><th>Name</th><th>Ct / Cp</th><th>Category</th><th>Component</th><th>Programme</th><th>Lvl/Sem</th><th>Weekly/Th/Pr hrs</th><th></th></tr></thead>
             <tbody>
               {(courses.data ?? []).map((c) => (
                 editingId === c.id ? (
                   <tr key={c.id}>
-                    <td colSpan={8}>
+                    <td colSpan={9}>
                       {editError && <div className="banner banner-error" style={{ marginTop: 10 }}>{editError}</div>}
                       <CourseFields
                         form={editForm}
@@ -185,6 +189,9 @@ export function AdminCourses() {
                     <td>{c.theory_credit} / {c.practical_credit}</td>
                     <td>{c.category}</td><td>{c.component_type.replace("_", " ")}</td>
                     <td>{progName(c.programme_id)}</td><td>L{c.level} S{c.semester}</td>
+                    <td className="muted">
+                      {c.weekly_hours ?? "—"} / {c.theory_hours ?? "—"} / {c.practical_hours ?? "—"}
+                    </td>
                     <td className="text-right">
                       <span className="gap-8" style={{ justifyContent: "flex-end" }}>
                         <button className="small ghost" onClick={() => startEdit(c)}>Edit</button>
@@ -213,10 +220,12 @@ export function AdminCourses() {
       <div className="card">
         <h2>Bulk-add course units (Excel)</h2>
         <p className="muted" style={{ marginTop: -6 }}>
-          Fill in one row per course unit and upload — each valid row is created immediately, and
-          any problem rows are reported individually so they don't block the rest. Leave Level and
-          Semester blank and they're worked out automatically from the course code (e.g. "IT2223" →
-          Level 2, Semester 2); fill them in yourself for a code that doesn't follow that pattern.
+          Fill in one row per course unit and upload — just Code, Name and whatever credit/hours
+          columns you have. Level, Semester, Programme, Category and Component Type are all worked
+          out automatically from the course code and hours (e.g. "IT2223" → Level 2, Semester 2, and
+          an IT-prefixed code → the IT programme); add any of those columns yourself to override the
+          guess for a code that doesn't follow the pattern. A code that already exists is left
+          unchanged and reported as skipped, not an error — safe to re-upload the same sheet.
         </p>
         <BulkCourseUploader onDone={() => courses.reload()} />
       </div>
@@ -224,8 +233,8 @@ export function AdminCourses() {
   );
 }
 
-interface CourseBulkRowResult { row: number; code: string; name?: string; status: "created" | "error"; reason?: string }
-interface CourseBulkResponse { created: number; failed: number; results: CourseBulkRowResult[] }
+interface CourseBulkRowResult { row: number; code: string; name?: string; status: "created" | "skipped" | "error"; reason?: string }
+interface CourseBulkResponse { created: number; skipped: number; failed: number; results: CourseBulkRowResult[] }
 
 function BulkCourseUploader({ onDone }: { onDone: () => void }) {
   const fileRef = useRef<HTMLInputElement>(null);
@@ -269,17 +278,18 @@ function BulkCourseUploader({ onDone }: { onDone: () => void }) {
       {result && (
         <div>
           <div className={`banner ${result.failed > 0 ? "banner-error" : "banner-success"}`}>
-            {result.created} course unit(s) created, {result.failed} failed.
+            {result.created} course unit(s) created, {result.skipped} already existed (skipped), {result.failed} failed.
           </div>
-          {result.results.some((r) => r.status === "error") && (
+          {result.results.some((r) => r.status === "error" || r.status === "skipped") && (
             <div style={{ overflowX: "auto" }}>
             <table>
-              <thead><tr><th>Row</th><th>Code</th><th>Reason</th></tr></thead>
+              <thead><tr><th>Row</th><th>Code</th><th>Status</th><th>Reason</th></tr></thead>
               <tbody>
-                {result.results.filter((r) => r.status === "error").map((r) => (
+                {result.results.filter((r) => r.status === "error" || r.status === "skipped").map((r) => (
                   <tr key={r.row}>
                     <td>{r.row}</td>
                     <td>{r.code}</td>
+                    <td>{r.status}</td>
                     <td>{r.reason ?? ""}</td>
                   </tr>
                 ))}

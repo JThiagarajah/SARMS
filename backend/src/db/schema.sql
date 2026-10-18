@@ -71,6 +71,11 @@ CREATE TABLE IF NOT EXISTS lecturers (
   designation   TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_lecturers_department ON lecturers(department_id);
+-- staff_code/qualification: captured by the lecturer teaching-profile bulk import (an external
+-- staff reference code and free-text qualification) — nullable, informational, nothing else in
+-- SARMS reads them yet.
+ALTER TABLE lecturers ADD COLUMN IF NOT EXISTS staff_code TEXT;
+ALTER TABLE lecturers ADD COLUMN IF NOT EXISTS qualification TEXT;
 
 -- category: CORE | ELECTIVE | ACU
 -- component_type: THEORY_ONLY | PRACTICAL_ONLY | BOTH
@@ -87,6 +92,12 @@ CREATE TABLE IF NOT EXISTS course_units (
   semester         INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_courseunits_programme ON course_units(programme_id);
+-- weekly_hours/theory_hours/practical_hours: contact-hour counts captured by the course bulk
+-- import — separate from theory_credit/practical_credit (academic weight, drives grading) above.
+-- Nullable and purely informational: nothing in the grading engine reads these.
+ALTER TABLE course_units ADD COLUMN IF NOT EXISTS weekly_hours INTEGER;
+ALTER TABLE course_units ADD COLUMN IF NOT EXISTS theory_hours INTEGER;
+ALTER TABLE course_units ADD COLUMN IF NOT EXISTS practical_hours INTEGER;
 
 CREATE TABLE IF NOT EXISTS course_offerings (
   id             TEXT PRIMARY KEY,
@@ -99,6 +110,11 @@ CREATE TABLE IF NOT EXISTS course_offerings (
   UNIQUE(course_id, academic_year, semester)
 );
 CREATE INDEX IF NOT EXISTS idx_offerings_lecturer ON course_offerings(lecturer_id);
+-- Loosened so deleting the Super Admin who assigned an offering doesn't have to also delete the
+-- offering itself (see lib/cascadeDelete.ts) — the offering isn't that admin's data, it's the
+-- course's and the lecturer's, and it should survive with this "who assigned it" attribution
+-- simply cleared.
+ALTER TABLE course_offerings ALTER COLUMN assigned_by_id DROP NOT NULL;
 
 CREATE TABLE IF NOT EXISTS enrollments (
   id             TEXT PRIMARY KEY,
@@ -110,6 +126,8 @@ CREATE TABLE IF NOT EXISTS enrollments (
 );
 CREATE INDEX IF NOT EXISTS idx_enrollments_offering ON enrollments(offering_id);
 CREATE INDEX IF NOT EXISTS idx_enrollments_student ON enrollments(student_id);
+-- Loosened for the same reason as course_offerings.assigned_by_id above — see lib/cascadeDelete.ts.
+ALTER TABLE enrollments ALTER COLUMN enrolled_by_id DROP NOT NULL;
 
 -- Versioned curriculum & marking-scheme settings, owned by Dean or HOD. A result computed
 -- under a prior scheme keeps showing the formula in effect at the time — editing this row
@@ -132,6 +150,8 @@ CREATE TABLE IF NOT EXISTS marking_schemes (
   created_at                   TEXT NOT NULL,
   UNIQUE(department_id, academic_year)
 );
+-- Loosened for the same reason as course_offerings.assigned_by_id above — see lib/cascadeDelete.ts.
+ALTER TABLE marking_schemes ALTER COLUMN created_by_id DROP NOT NULL;
 
 -- component: THEORY | PRACTICAL
 CREATE TABLE IF NOT EXISTS ica_instruments (
@@ -188,6 +208,8 @@ CREATE TABLE IF NOT EXISTS result_versions (
   changed_at    TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_result_versions_result ON result_versions(result_id);
+-- Loosened for the same reason as course_offerings.assigned_by_id above — see lib/cascadeDelete.ts.
+ALTER TABLE result_versions ALTER COLUMN changed_by_id DROP NOT NULL;
 
 -- status: PENDING | APPROVED | REJECTED
 CREATE TABLE IF NOT EXISTS correction_requests (
@@ -201,6 +223,8 @@ CREATE TABLE IF NOT EXISTS correction_requests (
   created_at     TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_correction_requests_result ON correction_requests(result_id);
+-- Loosened for the same reason as course_offerings.assigned_by_id above — see lib/cascadeDelete.ts.
+ALTER TABLE correction_requests ALTER COLUMN requested_by_id DROP NOT NULL;
 
 CREATE TABLE IF NOT EXISTS resit_attempts (
   id         TEXT PRIMARY KEY,
@@ -248,6 +272,10 @@ CREATE TABLE IF NOT EXISTS lecturer_assignment_requests (
   decided_at     TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_lecturer_assignment_requests_status ON lecturer_assignment_requests(status);
+-- Loosened for the same reason as course_offerings.assigned_by_id above — see lib/cascadeDelete.ts.
+-- (lecturer_id is untouched: a request naming a since-deleted lecturer is deleted outright, since
+-- it exists to propose work for that exact lecturer — see cascadeDeleteUser.)
+ALTER TABLE lecturer_assignment_requests ALTER COLUMN uploaded_by_id DROP NOT NULL;
 
 CREATE TABLE IF NOT EXISTS activity_log (
   id          TEXT PRIMARY KEY,
@@ -260,3 +288,8 @@ CREATE TABLE IF NOT EXISTS activity_log (
 );
 CREATE INDEX IF NOT EXISTS idx_activity_log_user ON activity_log(user_id);
 CREATE INDEX IF NOT EXISTS idx_activity_log_entity ON activity_log(entity_type);
+
+-- The Places feature (a standalone room/lecture-hall catalog) was removed — dropped rather than
+-- left behind, so a database that already had it applied gets cleaned up too. Safe to leave this
+-- statement here permanently: it's a no-op once the table is gone.
+DROP TABLE IF EXISTS places;
